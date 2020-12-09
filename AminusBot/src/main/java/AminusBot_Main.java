@@ -2,20 +2,23 @@ import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
 import org.javacord.api.entity.channel.TextChannel;
 import org.javacord.api.entity.message.Message;
+import org.javacord.api.entity.message.MessageBuilder;
+import org.javacord.api.entity.message.MessageDecoration;
+import org.javacord.api.entity.message.Reaction;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.server.Server;
 
 import java.awt.*;
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
+import java.lang.reflect.Array;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.concurrent.ExecutionException;
 
 public class AminusBot_Main {
     public static void main( String[] args ) throws IOException {
-        String token = "Nzc1MjA4MzE3NDgzMDg5OTYw.X6i_AQ.lQV2X5rkVKR9M3LSrCf9LuY9WXM";
+        String token = "Nzc1MjA4MzE3NDgzMDg5OTYw.X6i_AQ.iNDdLMoc23UlQ_K5MYP0wdldzjE";
         DiscordApi api = new DiscordApiBuilder().setToken(token).login().join();
         DBUpdate update = new DBUpdate();
         Thread updater = new Thread( update );
@@ -75,17 +78,18 @@ public class AminusBot_Main {
                 else {
                     embed.setTitle("에이마이너스 도움말")
                          .setDescription("에이마이너스는 미니게임과 각종 기능을 이용할수 있는 봇입니다.")
-                         .addField("-[커맨드]", "아래의 명령어들은 모두 \"-\"를 앞에 붙혀서 불러야 정상적으로 처리됩니다.")
-                         .addField("도움말", "지금 보고 있는 도움말을 보여줍니다.")
-                         .addField("도움말 나무심기", "나무심기 게임에 대한 도움말을 보여줍니다.")
-                         .addField("굴러", "데굴데굴 구릅니다.");
+                         .addField("`-[커맨드]`", "아래의 명령어들은 모두 **\"-\"**를 앞에 붙혀서 불러야 정상적으로 처리됩니다.")
+                         .addField("`도움말`", "지금 보고 있는 도움말을 보여줍니다.")
+                         .addField("`도움말 나무심기`", "나무심기 게임에 대한 도움말을 보여줍니다.")
+                         .addField("`도움말 기능`", "봇의 기능에 대한 도움말을 보여줍니다.")
+                         .addField("`굴러`", "데굴데굴 구릅니다.");
                 }
 
                 ch.sendMessage( userMention, embed );
             }
             else if( msg.endsWith("등록") ){
                 embed.setTitle("등록하기");
-                embed.setDescription("```-등록 [닉네임]` 으로 등록을 진행해주세요.\n`[닉네임]`에 지정한 이름은 봇 내에서 이용됩니다.```");
+                embed.setDescription("```-등록 [닉네임] 으로 등록을 진행해주세요.\n[닉네임]에 지정한 이름은 봇 내에서 이용됩니다.```");
 
                 ch.sendMessage( userMention, embed );
             }
@@ -106,11 +110,22 @@ public class AminusBot_Main {
                     ch.sendMessage("```오류가 발생했습니다. 등록 양식을 확인하고 다시 시도해주세요.```");
                 }
             }
+            else if( msg.contains("탈퇴확인") ){
+                manager.secession( userid );
+                embed.setImage( new File("D:\\somthing I made\\AminusBot\\죽었어.png") )
+                        .setTitle("탈퇴가 완료되었습니다.")
+                        .setDescription("지금까지 에이마이너스 봇을 이용해주셔서 감사했습니다.");
+
+                ch.sendMessage( embed );
+            }
+            else if( msg.contains("탈퇴") ){
+                ch.sendMessage("```정말로 탈퇴하시겠습니까? 확인을 원하시면 \"-탈퇴확인\" 을 입력해주세요.\n❗ 탈퇴 시 가진 아이템과 모든 재산이 사라집니다. ❗```");
+            }
             else if( msg.contains("프로필") ){
                 Profile profile = manager.getProfile(userid);
 
                 if( profile == null ){
-                    ch.sendMessage("프로필을 확인하려면 먼저 \"-등록\"으로 등록을 진행해줘!");
+                    ch.sendMessage("먼저 \"-등록\"으로 등록을 진행해줘!");
                 } else {
                     embed.setTitle(profile.user_name + " 님의 프로필")
                             .setThumbnail( message.getAuthor().getAvatar() )
@@ -120,13 +135,51 @@ public class AminusBot_Main {
                 }
             }
             else if( msg.contains("나무") ){
-                plantTree();
+                if( manager.getProfile(userid) == null )
+                    ch.sendMessage("먼저 \"-등록\"으로 등록을 진행해줘!");
+                else {
+                    try {
+                        plantTree( msg, ch, embed, manager, userid );
+                    } catch (Exception e) { e.printStackTrace(); }
+                }
             }
-            else if( msg.contains("돈내놔") ){
-                manager.moneyUpdate( userid, 1000 );
-                ch.sendMessage("돈줬어");
+            else if( msg.contains("돈내놔") || msg.contains("돈줘") || msg.contains("돈주세요") ){
+                if( manager.getProfile(userid) == null )
+                    ch.sendMessage("먼저 \"-등록\"으로 등록을 진행해줘!");
+                else {
+                    manager.dataEdit(userid, "money", 1000);
+                    ch.sendMessage("돈줬어" + "\n`💵+1000`");
+                }
             }
-            else if( msg.contains("이미지") ) {
+            else if( msg.contains("주작") ){
+                if( manager.getProfile(userid) == null )
+                    ch.sendMessage("먼저 \"-등록\"으로 등록을 진행해줘!");
+                else {
+                    if( message.getUserAuthor().get().isBotOwner() ) {
+                        manager.dataEdit(userid, "money", 10000000);
+                        ch.sendMessage("날아오르라 주작이여" + "\n`💵+10000000`");
+                    }else
+                        ch.sendMessage("봇 주인의 더러운 수작이야");
+                }
+            }
+            else if( msg.contains("돈없애줘") ){
+                if( manager.getProfile(userid) == null )
+                    ch.sendMessage("먼저 \"-등록\"으로 등록을 진행해줘!");
+                else {
+                    manager.dataChange(userid, "money", 0);
+                    ch.sendMessage("응?" + "\n`💸가진 돈이 전부 사라졌습니다.`");
+                }
+            }
+            else if( msg.contains("랭킹") ){
+                ArrayList<Profile> rank = new ArrayList<Profile>();
+                rank = manager.getRank( userid );//top3의 Profile 객체를 0,1,2에, 메시지를 보낸 유저의 Profile 객체를 3에 담아서 넘김
+                embed.setTitle("🏆재산 랭킹🏆")
+                     .setDescription("🥇: "  + rank.get(0).user_name + "  " + rank.get(0).money + "원\n"
+                        + "🥈: " + rank.get(1).user_name + "  " + rank.get(1).money + "원\n"
+                        + "🥉: " + rank.get(2).user_name + "  " + rank.get(2).money + "원\n");
+                ch.sendMessage( embed );
+            }
+            else if( msg.contains("테스트") ) {
                 embed.setImage("https://blog.hubspot.com/hubfs/giphy_1-1.gif");
                 ch.sendMessage( userMention, embed );
             }
@@ -139,8 +192,99 @@ public class AminusBot_Main {
                 ch.sendMessage("그런 명령어는 아무리 뒤져봐도 없는 것 같은데..");
         } );
     }
-    public static void plantTree(){
+    public static void plantTree( String msg, TextChannel ch, EmbedBuilder embed, DBManager manager, long userid ) throws ExecutionException, InterruptedException {
+        String command = msg.replace("-나무 ", "");
+        Profile profile = manager.getProfile( userid );
 
+        if( command.equals("지갑") ){
+            ch.sendMessage("```" + profile.user_name + "님은 현재 " + profile.money + "💵 만큼의 재산을 가지고 있습니다.```");
+        } else if( command.equals("가방") ){
+            embed.setTitle( profile.user_name + "님의 가방")
+                    .setDescription( "묘목 🌱X" + profile.seedlings )
+                    .addField("팔 수 있는 아이템", "\n나무젓가락X" + profile.chopsticks +
+                                                            "\n나무 접시X" + profile.plates +
+                                                            "\n나무 열쇠고리X" + profile.keyrings +
+                                                            "\n나무 조각품X" + profile.sculptures +
+                                                            "\n나무 장난감X" + profile.toys +
+                                                            "\n나무 의자X" + profile.chairs +
+                                                            "\n나무 탁자X" + profile.tables +
+                                                            "\n나무 그네X" + profile.swings, true)
+                    .addField("기념품", "\n조각상X" + profile.figures +
+                                                    "\n인형X" + profile.plushs +
+                                                    "\n빛나는 유리구슬X" + profile.glassmarbles +
+                                                    "\n빛나는 보석X" + profile.primogems, true);
+            ch.sendMessage( embed );
+        } else if( command.equals("묘목조") ){
+            manager.dataEdit( userid, "seedlings", 1 );
+            ch.sendMessage("드림\n`🌱+1`");
+        } else if( command.equals("상점") ){
+            boolean iscompleted = false;
+            int needmoney = 0;
+            Message message = ( new MessageBuilder()
+                    .append("상점에 오신 것을 환영합니다!", MessageDecoration.BOLD)
+                    .addAttachment(new File("C:\\Users\\user\\Desktop\\자잘한거\\글임\\서버임티\\tkdwja.png"))
+                    .setEmbed( embed.setTitle("구매할 수 있는 아이템").setDescription("🌱 묘목 1000 💵\n🌲 묘목X5 4500 💵")
+                            .addField( "기념품", "🏆 조각상 50000 💵\n🧸 인형 100000 💵\n🔮 빛나는 유리구슬 200000 💵\n💎 빛나는 보석 1000000 💵")
+                            .setFooter( "현재 가지고 있는 돈: " + profile.money + " 💵\n20초 뒤에 자동으로 사라집니다." ))
+                    .send( ch ) ).get();
+
+            message.addReaction("🌱");
+            message.addReaction("🌲");
+            message.addReaction("🏆");
+            message.addReaction("🧸");
+            message.addReaction("🔮");
+            message.addReaction("💎");
+
+            Thread.sleep(10000);
+
+            ch.sendMessage("시간이 초과되었습니다.");
+            message.removeAllReactions();
+            message.addReaction("❌");
+
+            for ( Reaction re : message.getReactions() ){
+                if( re.getCount() == 2){
+                    if( re.getEmoji().equalsEmoji("🌱") )
+                        needmoney += 1000;
+                    else if( re.getEmoji().equalsEmoji("🌲") )
+                        needmoney += 4500;
+                    else if( re.getEmoji().equalsEmoji("🏆") )
+                        needmoney += 50000;
+                    else if( re.getEmoji().equalsEmoji("🧸") )
+                        needmoney += 100000;
+                    else if( re.getEmoji().equalsEmoji("🔮") )
+                        needmoney += 200000;
+                    else if( re.getEmoji().equalsEmoji("💎") )
+                        needmoney += 1000000;
+
+                    if( profile.money >= needmoney ) {
+                        manager.dataEdit(userid, "money", needmoney*-1);
+                        if( re.getEmoji().equalsEmoji("🌱") )
+                            manager.dataEdit(userid, "seedlings", 1);
+                        else if( re.getEmoji().equalsEmoji("🌲") )
+                            manager.dataEdit(userid, "seedlings", 5);
+                        else if( re.getEmoji().equalsEmoji("🏆") )
+                            manager.dataEdit(userid, "figures", 1);
+                        else if( re.getEmoji().equalsEmoji("🧸") )
+                            manager.dataEdit(userid, "plushs", 1);
+                        else if( re.getEmoji().equalsEmoji("🔮") )
+                            manager.dataEdit(userid, "glassmarbles", 1);
+                        else if( re.getEmoji().equalsEmoji("💎") )
+                            manager.dataEdit(userid, "primogems", 1);
+
+                        iscompleted = true;
+                    }
+                }
+            }
+            if( !iscompleted )
+                ch.sendMessage("```❗ 구매한 항목이 없거나 돈이 부족합니다.```");
+            else{
+                ch.sendMessage("```✅ 아이템이 성공적으로 구매되었습니다. \"-나무 가방\" 으로 확인해주세요.```");
+            }
+        }
+        else {
+            embed.setDescription("❔ 나무심기에 관한 커맨드는 \"-도움말 나무심기\" 를 참고해줘.");
+            ch.sendMessage( embed );
+        }
     }
     public static void printLOG( String content ){
         try {

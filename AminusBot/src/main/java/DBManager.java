@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.sql.*;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 
 public class DBManager {
@@ -13,7 +14,7 @@ public class DBManager {
     private final String DB_URL = "jdbc:mysql://localhost/planttree_data?serverTimezone=UTC"; //접속할 DB 서버 ?serverTimezone=UTC는 mysql8이상일때 넣어줘야함
 
     private final String USER_NAME = "plant"; //DB에 접속할 사용자 이름을 상수로 정의
-    private final String PASSWORD = ""; //사용자의 비밀번호를 상수로 정의
+    private final String PASSWORD = "planttree0893"; //사용자의 비밀번호를 상수로 정의
 
     Connection conn = null;
     Statement state = null;
@@ -29,13 +30,14 @@ public class DBManager {
 //
 //                System.out.println("번호: " + number);
 //                System.out.println("이름: " + name);
+
 //                System.out.println("직책: " + position);
 //                System.out.println("나이: " + age);
 //                System.out.println("-------------------------------");
 //          }    테스트용
     }
 
-    public boolean enrollment( String nickname, Long userid ) {
+    public boolean enrollment( String nickname, Long userid ) {//등록
         try {
             Class.forName(JDBC_DRIVER);
             conn = DriverManager.getConnection(DB_URL, USER_NAME, PASSWORD);
@@ -78,23 +80,22 @@ public class DBManager {
         }
         return true;
     }
-    public Profile getProfile( long userid ){
-        Profile profile = new Profile();
+    public boolean secession( long userid ){//탈퇴
         try {
             Class.forName(JDBC_DRIVER);
             conn = DriverManager.getConnection(DB_URL, USER_NAME, PASSWORD);
             state = conn.createStatement();
-            String sql = "SELECT * FROM users WHERE user_id=" + userid;
+            String sql = "SELECT * FROM users WHERE user_id=" + userid;//사용할 명령어를 String으로 미리 저장해둠
 
             res = state.executeQuery(sql);
             isfound = res.next();
 
             if (!isfound)
-                return null;
+                return false;
 
-            profile.user_name = res.getString("user_name");
-            profile.money = res.getInt("money");
-            profile.rank = res.getInt("rank");
+            sql = "DELETE FROM users WHERE user_id=" + userid;
+            state.executeUpdate(sql);
+            printDBLOG( "데이터가 삭제되었습니다. ID: " + userid );
 
             conn.close();
             state.close();
@@ -116,34 +117,213 @@ public class DBManager {
                 ex1.printStackTrace();
             }
         }
-        return profile;
+        return true;
     }
-    public void moneyUpdate( long userid, int money ){
+    public Profile getProfile( long userid ){
+        Profile profile = new Profile();
         try {
             Class.forName(JDBC_DRIVER);
             conn = DriverManager.getConnection(DB_URL, USER_NAME, PASSWORD);
             state = conn.createStatement();
-            String sql = "select money from users where user_id=" + userid;
-            int havingmoney=0;
+            String sql = "SELECT * FROM users WHERE user_id=" + userid;
 
             res = state.executeQuery(sql);
-            res.next();
-            havingmoney = res.getInt("money");
+            isfound = res.next();
 
-            havingmoney += money;
+            if (!isfound)
+                return null;
 
-            sql = "update users set money=" + havingmoney;
-
-            state.executeUpdate(sql);
-
-            printDBLOG( "데이터가 업데이트되었습니다. ID: " + res.getString("user_id") + " NAME: " + res.getString("user_name") );
+            profile.user_name = res.getString("user_name");
+            profile.money = res.getInt("money");
+            profile.rank = res.getInt("rank");
+            profile.proficiency = res.getInt("proficiency");
+            profile.planted_tree = res.getInt("planted_tree");
+            profile.woods = res.getInt("woods");
+            profile.seedlings = res.getInt("seedlings");
+            profile.chopsticks = res.getInt("chopsticks");
+            profile.plates = res.getInt("plates");
+            profile.keyrings = res.getInt("keyrings");
+            profile.sculptures = res.getInt("sculptures");
+            profile.toys = res.getInt("toys");
+            profile.tables = res.getInt("tables");
+            profile.chairs = res.getInt("chairs");
+            profile.swings = res.getInt("swings");
+            profile.figures = res.getInt("figures");
+            profile.plushs = res.getInt("plushs");
+            profile.glassmarbles = res.getInt("glassmarbles");
+            profile.primogems = res.getInt("primogems");
 
             conn.close();
             state.close();
             res.close();
         } catch(Exception e){
             e.printStackTrace();
-        } finally { //예외가 있든 없든 무조건 실행. state와 conn이 만약 닫히지 않았을 때 제대로 닫아줌
+        } finally {
+            try{
+                if(state!=null)
+                    state.close();
+            }catch(SQLException ex1){
+                ex1.printStackTrace();
+            }
+
+            try{
+                if(conn!=null)
+                    conn.close();
+            }catch(SQLException ex1){
+
+                ex1.printStackTrace();
+            }
+        }
+        return profile;
+    }
+    public Items getItems( String itemName ){
+        Items items = new Items();
+        try {
+            Class.forName(JDBC_DRIVER);
+            conn = DriverManager.getConnection(DB_URL, USER_NAME, PASSWORD);
+            state = conn.createStatement();
+            String sql = "SELECT * FROM items WHERE item_name=" + itemName;
+
+            res = state.executeQuery(sql);
+            isfound = res.next();
+
+            if (!isfound)
+                return null;
+
+            items.item_name = res.getString("item_name");
+            items.description = res.getString("description");
+            items.minvalue = res.getInt("minvalue");
+            items.minproficiency = res.getInt("minproficiency");
+            items.needWoods = res.getInt("needWoods");
+            items.iscanmake = res.getBoolean("iscanmake");
+            items.iscansell = res.getBoolean("iscansell");
+
+            conn.close();
+            state.close();
+            res.close();
+        } catch(Exception e){
+            e.printStackTrace();
+        } finally {
+            try{
+                if(state!=null)
+                    state.close();
+            }catch(SQLException ex1){
+                ex1.printStackTrace();
+            }
+
+            try{
+                if(conn!=null)
+                    conn.close();
+            }catch(SQLException ex1){
+
+                ex1.printStackTrace();
+            }
+        }
+        return items;
+    }
+    public ArrayList<Profile> getRank( long userid ){
+        ArrayList<Profile> rank = new ArrayList<Profile>();
+
+        try {
+            Class.forName(JDBC_DRIVER);
+            conn = DriverManager.getConnection(DB_URL, USER_NAME, PASSWORD);
+            state = conn.createStatement();
+            String sql = "select * from users order by money desc";
+
+            res = state.executeQuery( sql );
+
+            for(int i=0; i<3; i++){
+                res.next();
+                rank.add( new Profile( res.getString("user_name"), res.getInt("money") ) );
+            }
+
+            sql = "select * from users where user_id=" + userid;
+            res = state.executeQuery( sql );
+            res.next();
+            rank.add( new Profile( res.getString("user_name"), res.getInt("money") ) );
+        } catch(Exception e){
+            e.printStackTrace();
+        } finally {
+            try{
+                if(state!=null)
+                    state.close();
+            }catch(SQLException ex1){
+                ex1.printStackTrace();
+            }
+
+            try{
+                if(conn!=null)
+                    conn.close();
+            }catch(SQLException ex1){
+                ex1.printStackTrace();
+            }
+            return rank;
+        }
+    }
+    public void dataEdit( long userid, String attribute, int cnt ){//넘겨준 속성의 값을 넘겨준 만큼 증가하거나 감소
+        try {
+            Class.forName(JDBC_DRIVER);
+            conn = DriverManager.getConnection(DB_URL, USER_NAME, PASSWORD);
+            state = conn.createStatement();
+            String sql = "select " + attribute + " from users where user_id=" + userid;
+            int having=0;
+
+            res = state.executeQuery(sql);
+            res.next();
+            having = res.getInt( attribute );
+
+            having += cnt;
+
+            sql = "update users set " + attribute + "=" + having + " where user_id=" + userid;
+            state.executeUpdate(sql);
+
+            sql = "select * from users where user_id=" + userid;
+            res = state.executeQuery( sql );
+
+            res.next();
+            printDBLOG( "데이터가 업데이트되었습니다. ID: " + res.getString("user_id") + " NAME: " + res.getString("user_name") + "에 " + attribute + " " + cnt + "만큼 추가" );
+
+            conn.close();
+            state.close();
+            res.close();
+        } catch(Exception e){
+            e.printStackTrace();
+        } finally {
+            try{
+                if(state!=null)
+                    state.close();
+            }catch(SQLException ex1){
+                ex1.printStackTrace();
+            }
+
+            try{
+                if(conn!=null)
+                    conn.close();
+            }catch(SQLException ex1){
+                ex1.printStackTrace();
+            }
+        }
+    }
+    public void dataChange( long userid, String attribute, int cnt ){//넘겨준 속성의 데이터값을 넘겨준 값으로 완전히 치환
+        try {
+            Class.forName(JDBC_DRIVER);
+            conn = DriverManager.getConnection(DB_URL, USER_NAME, PASSWORD);
+            state = conn.createStatement();
+            String sql = "update users set " + attribute + "=" + cnt + " where user_id=" + userid;
+            state.executeUpdate(sql);
+
+            sql = "select * from users where user_id=" + userid;
+            res = state.executeQuery( sql );
+
+            res.next();
+            printDBLOG( "데이터가 업데이트되었습니다. ID: " + res.getString("user_id") + " NAME: " + res.getString("user_name") + "에 " + attribute + "값 " + cnt + "로 변경" );
+
+            conn.close();
+            state.close();
+            res.close();
+        } catch(Exception e){
+            e.printStackTrace();
+        } finally {
             try{
                 if(state!=null)
                     state.close();
