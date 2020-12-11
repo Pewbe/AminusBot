@@ -18,7 +18,7 @@ import java.util.concurrent.ExecutionException;
 
 public class AminusBot_Main {
     public static void main( String[] args ) throws IOException {
-        String token = "Nzc1MjA4MzE3NDgzMDg5OTYw.X6i_AQ.iNDdLMoc23UlQ_K5MYP0wdldzjE";
+        String token = "Nzc1MjA4MzE3NDgzMDg5OTYw.X6i_AQ.tJFXQcc4FuJvJWGmaJy2raHxMFo";
         DiscordApi api = new DiscordApiBuilder().setToken(token).login().join();
         DBUpdate update = new DBUpdate();
         Thread updater = new Thread( update );
@@ -38,11 +38,13 @@ public class AminusBot_Main {
             Message message = ev.getMessage();
             String msg = ev.getMessageContent();
             EmbedBuilder embed = new EmbedBuilder();
-            String replaced, splitd, buff;//임시 스트링 변수들
+            String replaced, buff;//임시 스트링 변수들
             String userMention = message.getUserAuthor().get().getMentionTag();
             String userName = message.getUserAuthor().get().getName();
+            String[] splitted;
             DBManager manager = new DBManager();
             long userid = message.getUserAuthor().get().getId();
+            Profile profile = manager.getProfile(userid);
 
             embed.setColor( Color.CYAN );
 
@@ -61,14 +63,17 @@ public class AminusBot_Main {
                 replaced = msg.replace( "-도움말 ", "" );
 
                 if( replaced.equals("기능") ){
-                    embed.addField("`-돈내놔`", "돈을 줍니다.");
+                    embed.addField("`등록 [닉네임]`", "봇에 등록합니다. 등록하여야만 사용할 수 있는 기능들을\n이용할 수 있게 됩니다.")
+                         .addField("`-돈내놔`", "돈을 줍니다.")
+                         .addField("`-지갑`", "현재 자신의 소지금을 보여줍니다.")
+                         .addField("`-프로필`", "자신의 프로필을 보여줍니다.")
+                         .addField("`-골라 [값1] [값2]...`", "봇이 무언가를 대신 골라줍니다.\n띄어쓰기로 구분합니다.");
                 }
                 else if ( replaced.equals("나무심기") ){
                     embed.setTitle("나무심기")
                          .setDescription("나무심기 게임에 관한 설명입니다.\n처음이라면 `-등록` 을 입력해 등록을 진행해주세요.")
                          .addField("`-나무 가방`", "현재 자신의 소지품 목록을 보여줍니다.")
-                         .addField("`-나무 지갑`", "현재 자신의 소지금과 소지금 랭킹을 보여줍니다.")
-                         .addField("`-나무 현황`", "현재 자신이 심은 나무의 현황을 보여주고 관리합니다.")
+                         .addField("`-나무 현황`", "현재 자신이 심은 나무의 현황을 보여줍니다.")
                          .addField("`-나무 심기`", "보유한 씨앗을 심습니다. 나무 한 그루는 자리 1을 차지합니다.")
                          .addField("`-나무 베기`", "다 자란 나무를 벱니다. 벤 나무는 목재가 되고 사라집니다.")
                          .addField("`-나무 제작`", "보유한 목재로 물건을 만듭니다.\n만든 물건은 가치가 매겨져 팔 수 있습니다.")
@@ -100,7 +105,7 @@ public class AminusBot_Main {
                     boolean isSucceed = manager.enrollment( nickname, userid );
 
                     if( isSucceed ) {
-                        ch.sendMessage("```" + nickname + "(으)로 등록이 완료되었습니다!```");
+                        ch.sendMessage("```✅ " + nickname + "(으)로 등록이 완료되었습니다!```");
                         ch.sendMessage("등록이 완료됐어. 앞으로 잘 부탁해!");
                     } else {
                         ch.sendMessage("```이미 등록된 계정입니다. \"-프로필\" 로 확인해주세요.```");
@@ -111,19 +116,41 @@ public class AminusBot_Main {
                 }
             }
             else if( msg.contains("탈퇴확인") ){
-                manager.secession( userid );
-                embed.setImage( new File("D:\\somthing I made\\AminusBot\\죽었어.png") )
-                        .setTitle("탈퇴가 완료되었습니다.")
-                        .setDescription("지금까지 에이마이너스 봇을 이용해주셔서 감사했습니다.");
+                if( profile == null ){
+                    ch.sendMessage("탈퇴할 프로필이 없습니다.");
+                } else {
+                    manager.secession(userid);
+                    embed.setImage(new File("D:\\somthing I made\\AminusBot\\죽었어.png"))
+                            .setTitle("탈퇴가 완료되었습니다.")
+                            .setDescription("지금까지 에이마이너스 봇을 이용해주셔서 감사했습니다.");
 
-                ch.sendMessage( embed );
+                    ch.sendMessage(embed);
+                }
             }
             else if( msg.contains("탈퇴") ){
-                ch.sendMessage("```정말로 탈퇴하시겠습니까? 확인을 원하시면 \"-탈퇴확인\" 을 입력해주세요.\n❗ 탈퇴 시 가진 아이템과 모든 재산이 사라집니다. ❗```");
+                if( profile == null )
+                    ch.sendMessage("탈퇴할 프로필이 없습니다.");
+                else
+                    ch.sendMessage("```정말로 탈퇴하시겠습니까? 확인을 원하시면 \"-탈퇴확인\" 을 입력해주세요.\n❗ 탈퇴 시 가진 아이템과 모든 재산이 사라집니다. ❗```");
+            }
+            else if( msg.contains("참") ){
+                ch.sendMessage("어떻게 사람 이름이 참ㅋㅋㅋ");
+            }
+            else if ( msg.contains("골라") ){
+                splitted = msg.replace("-골라 ", "").split(" ");
+                int rand = (int)(Math.random()*splitted.length);
+
+                ch.sendMessage( splitted[rand] + "이(가) 좋을 것 같은데.." );
+            }
+            else if( msg.endsWith("닉네임변경") ){
+                ch.sendMessage("```❗ 올바른 사용법: -닉네임변경 [변경할 닉네임]```");
+            }
+            else if( msg.contains("닉네임변경") ){
+                replaced = msg.replace("-닉네임변경 ", "");
+                manager.stringDataChange(userid, "user_name", replaced);
+                ch.sendMessage("```✅ 닉네임이 " + replaced + "(으)로 변경되었습니다.```");
             }
             else if( msg.contains("프로필") ){
-                Profile profile = manager.getProfile(userid);
-
                 if( profile == null ){
                     ch.sendMessage("먼저 \"-등록\"으로 등록을 진행해줘!");
                 } else {
@@ -170,6 +197,9 @@ public class AminusBot_Main {
                     ch.sendMessage("응?" + "\n`💸가진 돈이 전부 사라졌습니다.`");
                 }
             }
+            else if( msg.contains("지갑") ){
+                ch.sendMessage("```" + profile.user_name + "님은 현재 " + profile.money + "💵 만큼의 재산을 가지고 있습니다.```");
+            }
             else if( msg.contains("랭킹") ){
                 ArrayList<Profile> rank = new ArrayList<Profile>();
                 rank = manager.getRank( userid );//top3의 Profile 객체를 0,1,2에, 메시지를 보낸 유저의 Profile 객체를 3에 담아서 넘김
@@ -196,9 +226,7 @@ public class AminusBot_Main {
         String command = msg.replace("-나무 ", "");
         Profile profile = manager.getProfile( userid );
 
-        if( command.equals("지갑") ){
-            ch.sendMessage("```" + profile.user_name + "님은 현재 " + profile.money + "💵 만큼의 재산을 가지고 있습니다.```");
-        } else if( command.equals("가방") ){
+        if( command.equals("가방") ){
             embed.setTitle( profile.user_name + "님의 가방")
                     .setDescription( "묘목 🌱X" + profile.seedlings )
                     .addField("팔 수 있는 아이템", "\n나무젓가락X" + profile.chopsticks +
@@ -214,18 +242,27 @@ public class AminusBot_Main {
                                                     "\n빛나는 유리구슬X" + profile.glassmarbles +
                                                     "\n빛나는 보석X" + profile.primogems, true);
             ch.sendMessage( embed );
-        } else if( command.equals("묘목조") ){
-            manager.dataEdit( userid, "seedlings", 1 );
-            ch.sendMessage("드림\n`🌱+1`");
-        } else if( command.equals("상점") ){
+        } else if( command.equals("현황") ){
+            ch.sendMessage("```제작중입니다.```");
+        } else if( command.equals("심기") ){
+            ch.sendMessage("```ㅁㄴㅇㄹ```");
+            ch.sendMessage("```제작중입니다.```");
+        } else if( command.equals("베기") ){
+            ch.sendMessage("```제작중입니다.```");
+        } else if( command.equals("제작") ){
+            ch.sendMessage("```제작중입니다.```");
+        } else if( command.equals("팔기") ){
+            ch.sendMessage("```제작중입니다.```");
+        }
+        else if( command.equals("상점") ){
             boolean iscompleted = false;
             int needmoney = 0;
             Message message = ( new MessageBuilder()
                     .append("상점에 오신 것을 환영합니다!", MessageDecoration.BOLD)
-                    .addAttachment(new File("C:\\Users\\user\\Desktop\\자잘한거\\글임\\서버임티\\tkdwja.png"))
+                    //.addAttachment(new File("C:\\Users\\user\\Desktop\\자잘한거\\글임\\서버임티\\tkdwja.png"))
                     .setEmbed( embed.setTitle("구매할 수 있는 아이템").setDescription("🌱 묘목 1000 💵\n🌲 묘목X5 4500 💵")
                             .addField( "기념품", "🏆 조각상 50000 💵\n🧸 인형 100000 💵\n🔮 빛나는 유리구슬 200000 💵\n💎 빛나는 보석 1000000 💵")
-                            .setFooter( "현재 가지고 있는 돈: " + profile.money + " 💵\n20초 뒤에 자동으로 사라집니다." ))
+                            .setFooter( "현재 가지고 있는 돈: " + profile.money + " 💵\n10초 뒤에 자동으로 사라집니다." ))
                     .send( ch ) ).get();
 
             message.addReaction("🌱");

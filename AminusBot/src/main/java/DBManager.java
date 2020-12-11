@@ -339,6 +339,44 @@ public class DBManager {
             }
         }
     }
+    public void stringDataChange( long userid, String attribute, String changename ){//넘겨준 속성의 "문자열" 데이터값을 넘겨준 값으로 완전히 치환
+        try {
+            Class.forName(JDBC_DRIVER);
+            conn = DriverManager.getConnection(DB_URL, USER_NAME, PASSWORD);
+            state = conn.createStatement();
+            String sql = "update users set " + attribute + "=\"" + changename + "\" where user_id=" + userid;
+
+            System.out.println( sql );
+
+            state.executeUpdate(sql);
+
+            sql = "select * from users where user_id=" + userid;
+            res = state.executeQuery( sql );
+
+            res.next();
+            printDBLOG( "데이터가 업데이트되었습니다. ID: " + res.getString("user_id") + " NAME: " + res.getString("user_name") + "에 " + attribute + "값 " + changename + "로 변경" );
+
+            conn.close();
+            state.close();
+            res.close();
+        } catch(Exception e){
+            e.printStackTrace();
+        } finally {
+            try{
+                if(state!=null)
+                    state.close();
+            }catch(SQLException ex1){
+                ex1.printStackTrace();
+            }
+
+            try{
+                if(conn!=null)
+                    conn.close();
+            }catch(SQLException ex1){
+                ex1.printStackTrace();
+            }
+        }
+    }
     public void printDBLOG( String content ) throws IOException {
         SimpleDateFormat formatNow = new SimpleDateFormat ("yyyy.MM.dd(E) ahh:mm:ss Zz");
         java.util.Date timeNow = new Date();
