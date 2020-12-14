@@ -7,6 +7,7 @@ import org.javacord.api.entity.message.MessageDecoration;
 import org.javacord.api.entity.message.Reaction;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.server.Server;
+import org.javacord.api.entity.user.User;
 
 import java.awt.*;
 import java.io.*;
@@ -18,13 +19,8 @@ import java.util.concurrent.ExecutionException;
 
 public class AminusBot_Main {
     public static void main( String[] args ) throws IOException {
-        String token = "Nzc1MjA4MzE3NDgzMDg5OTYw.X6i_AQ.tJFXQcc4FuJvJWGmaJy2raHxMFo";
+        String token = "Nzc1MjA4MzE3NDgzMDg5OTYw.X6i_AQ.sKc0DYft34hvn4sR3_HUT2bAg2E";
         DiscordApi api = new DiscordApiBuilder().setToken(token).login().join();
-        DBUpdate update = new DBUpdate();
-        Thread updater = new Thread( update );
-
-        updater.setDaemon(true);
-        updater.start();
 
         api.updateActivity("\"-도움말\"이라고 해봐");
 
@@ -39,11 +35,12 @@ public class AminusBot_Main {
             String msg = ev.getMessageContent();
             EmbedBuilder embed = new EmbedBuilder();
             String replaced, buff;//임시 스트링 변수들
-            String userMention = message.getUserAuthor().get().getMentionTag();
-            String userName = message.getUserAuthor().get().getName();
+            User auther = message.getUserAuthor().get();
+            String userMention = auther.getMentionTag();
+            String userName = auther.getName();
             String[] splitted;
             DBManager manager = new DBManager();
-            long userid = message.getUserAuthor().get().getId();
+            long userid = auther.getId();
             Profile profile = manager.getProfile(userid);
 
             embed.setColor( Color.CYAN );
@@ -74,8 +71,8 @@ public class AminusBot_Main {
                          .setDescription("나무심기 게임에 관한 설명입니다.\n처음이라면 `-등록` 을 입력해 등록을 진행해주세요.")
                          .addField("`-나무 가방`", "현재 자신의 소지품 목록을 보여줍니다.")
                          .addField("`-나무 현황`", "현재 자신이 심은 나무의 현황을 보여줍니다.")
-                         .addField("`-나무 심기`", "보유한 씨앗을 심습니다. 나무 한 그루는 자리 1을 차지합니다.")
-                         .addField("`-나무 베기`", "다 자란 나무를 벱니다. 벤 나무는 목재가 되고 사라집니다.")
+                         .addField("`-나무 심기 [개수]`", "보유한 씨앗을 심습니다. 나무 한 그루는 자리 1을 차지합니다.")
+                         .addField("`-나무 베기 [개수]`", "다 자란 나무를 벱니다. 벤 나무는 목재가 되고 사라집니다.")
                          .addField("`-나무 제작`", "보유한 목재로 물건을 만듭니다.\n만든 물건은 가치가 매겨져 팔 수 있습니다.")
                          .addField("`-나무 팔기`", "만든 물건을 팝니다.\n물건을 팔아서 돈을 얻습니다.")
                          .addField("`-나무 상점`", "상점 목록을 보여줍니다. 씨앗이나 기념품을 구매할 수 있습니다.");
@@ -133,7 +130,7 @@ public class AminusBot_Main {
                 else
                     ch.sendMessage("```정말로 탈퇴하시겠습니까? 확인을 원하시면 \"-탈퇴확인\" 을 입력해주세요.\n❗ 탈퇴 시 가진 아이템과 모든 재산이 사라집니다. ❗```");
             }
-            else if( msg.contains("참") ){
+            else if( msg.contains("참") || msg.contains("cka") ){
                 ch.sendMessage("어떻게 사람 이름이 참ㅋㅋㅋ");
             }
             else if ( msg.contains("골라") ){
@@ -174,19 +171,19 @@ public class AminusBot_Main {
                 if( manager.getProfile(userid) == null )
                     ch.sendMessage("먼저 \"-등록\"으로 등록을 진행해줘!");
                 else {
-                    manager.dataEdit(userid, "money", 1000);
-                    ch.sendMessage("돈줬어" + "\n`💵+1000`");
+                    manager.dataEdit(userid, "money", 10000);
+                    ch.sendMessage("돈줬어" + "\n`💵+10000`");
                 }
             }
             else if( msg.contains("주작") ){
                 if( manager.getProfile(userid) == null )
                     ch.sendMessage("먼저 \"-등록\"으로 등록을 진행해줘!");
                 else {
-                    if( message.getUserAuthor().get().isBotOwner() ) {
+                    if( auther.isBotOwner() ) {
                         manager.dataEdit(userid, "money", 10000000);
                         ch.sendMessage("날아오르라 주작이여" + "\n`💵+10000000`");
-                    }else
-                        ch.sendMessage("봇 주인의 더러운 수작이야");
+                    } else
+                        ch.sendMessage("봇 주인의 더러운 수작...아니 테스트용 커맨드야.");
                 }
             }
             else if( msg.contains("돈없애줘") ){
@@ -225,10 +222,11 @@ public class AminusBot_Main {
     public static void plantTree( String msg, TextChannel ch, EmbedBuilder embed, DBManager manager, long userid ) throws ExecutionException, InterruptedException {
         String command = msg.replace("-나무 ", "");
         Profile profile = manager.getProfile( userid );
+        String replaced;
 
         if( command.equals("가방") ){
             embed.setTitle( profile.user_name + "님의 가방")
-                    .setDescription( "묘목 🌱X" + profile.seedlings )
+                    .setDescription( "묘목 🌱X" + profile.seedlings + "\n목재 🌲X" + profile.woods )
                     .addField("팔 수 있는 아이템", "\n나무젓가락X" + profile.chopsticks +
                                                             "\n나무 접시X" + profile.plates +
                                                             "\n나무 열쇠고리X" + profile.keyrings +
@@ -243,14 +241,38 @@ public class AminusBot_Main {
                                                     "\n빛나는 보석X" + profile.primogems, true);
             ch.sendMessage( embed );
         } else if( command.equals("현황") ){
-            ch.sendMessage("```제작중입니다.```");
-        } else if( command.equals("심기") ){
-            ch.sendMessage("```ㅁㄴㅇㄹ```");
-            ch.sendMessage("```제작중입니다.```");
-        } else if( command.equals("베기") ){
-            ch.sendMessage("```제작중입니다.```");
+            if( profile.planted_tree == 0 )
+                ch.sendMessage("```🍃 너무나도 썰렁합니다. 현재 나무가 한 그루도 심어져있지 않네요!```");
+            else
+                ch.sendMessage("```🌲 현재 " + profile.planted_tree + "그루의 나무가 심어져 있으며 " + (20-profile.planted_tree) + "만큼의 자리가 남아 있습니다.```");
+        } else if( command.contains("심기") ){
+            int plant = Integer.parseInt( replaced = command.replace("심기 ", "") );
+
+            if( (profile.planted_tree + plant) <= 20 ){
+                if( profile.seedlings >= plant && plant > 0 ) {
+                    profile.planted_tree += plant;
+                    manager.dataEdit(userid, "planted_tree", plant);
+                    manager.dataEdit(userid, "seedlings", plant*-1);
+                    ch.sendMessage("```✅ " + plant + "그루의 나무를 심었습니다. 현재 " + profile.planted_tree + "그루의 나무가 심어져 있습니다.\n    현재 " + (20-profile.planted_tree) + "만큼의 자리가 남아 있습니다.```");
+                }
+                else
+                    ch.sendMessage("```❗ 최소 한 그루 이상은 심어야 합니다. 혹은 가진 묘목의 수가 부족합니다.```");
+            }else
+                ch.sendMessage("```❗ 자리가 부족합니다. 나무는 최대 20그루까지 심을 수 있습니다.```");
+        } else if( command.contains("베기") ){
+            int cut = Integer.parseInt( replaced = command.replace("베기 ", "") );
+            int bonus = (int)(Math.random()*profile.proficiency);
+
+            if( profile.planted_tree >= cut && cut > 0 ){
+                profile.woods += cut + bonus;
+                manager.dataEdit(userid, "woods", cut);
+                manager.dataEdit(userid, "planted_tree", cut*-1);
+                ch.sendMessage("```✅ " + cut + "그루의 나무를 베었습니다. 숙련도 보너스로 " + bonus + "개가 추가되어 현재 " + profile.woods + "개의 목재를 가지고 있습니다.```");
+            }
+            else
+                ch.sendMessage("```❗ 벨 수 있는 나무의 수가 부족합니다. \"-나무 현황\" 으로 확인해주세요.```");
         } else if( command.equals("제작") ){
-            ch.sendMessage("```제작중입니다.```");
+            ch.sendMessage("```개발중입니다.```");
         } else if( command.equals("팔기") ){
             ch.sendMessage("```제작중입니다.```");
         }
@@ -259,7 +281,7 @@ public class AminusBot_Main {
             int needmoney = 0;
             Message message = ( new MessageBuilder()
                     .append("상점에 오신 것을 환영합니다!", MessageDecoration.BOLD)
-                    //.addAttachment(new File("C:\\Users\\user\\Desktop\\자잘한거\\글임\\서버임티\\tkdwja.png"))
+                    //.addAttachment(new File("C:\\Users\\user\\Desktop\\자잘한거\\글임\\서버임티\\tkdwja.png")) 
                     .setEmbed( embed.setTitle("구매할 수 있는 아이템").setDescription("🌱 묘목 1000 💵\n🌲 묘목X5 4500 💵")
                             .addField( "기념품", "🏆 조각상 50000 💵\n🧸 인형 100000 💵\n🔮 빛나는 유리구슬 200000 💵\n💎 빛나는 보석 1000000 💵")
                             .setFooter( "현재 가지고 있는 돈: " + profile.money + " 💵\n10초 뒤에 자동으로 사라집니다." ))
@@ -315,8 +337,11 @@ public class AminusBot_Main {
             if( !iscompleted )
                 ch.sendMessage("```❗ 구매한 항목이 없거나 돈이 부족합니다.```");
             else{
-                ch.sendMessage("```✅ 아이템이 성공적으로 구매되었습니다. \"-나무 가방\" 으로 확인해주세요.```");
+                ch.sendMessage("```✅ 아이템이 성공적으로 구매되었습니다. 사용한 돈: " + needmoney + "💵 \"-나무 가방\" 으로 확인해주세요.```");
             }
+        }
+        else if( command.equals("돈벌기") ){
+
         }
         else {
             embed.setDescription("❔ 나무심기에 관한 커맨드는 \"-도움말 나무심기\" 를 참고해줘.");
