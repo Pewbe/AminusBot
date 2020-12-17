@@ -9,6 +9,7 @@ import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.entity.server.Server;
 import org.javacord.api.entity.user.User;
 
+import javax.xml.bind.annotation.XmlAnyElement;
 import java.awt.*;
 import java.io.*;
 import java.lang.reflect.Array;
@@ -19,9 +20,10 @@ import java.util.concurrent.ExecutionException;
 
 public class AminusBot_Main {
     public static void main( String[] args ) throws IOException {
-        String token = "Nzc1MjA4MzE3NDgzMDg5OTYw.X6i_AQ.sKc0DYft34hvn4sR3_HUT2bAg2E";
+        String token = "Nzc1MjA4MzE3NDgzMDg5OTYw.X6i_AQ.fAX65OuOBVeLoIg9lGn2LaYEX1Q";
         DiscordApi api = new DiscordApiBuilder().setToken(token).login().join();
 
+        printLOG("디스코드에 로그인했습니다.");
         api.updateActivity("\"-도움말\"이라고 해봐");
 
         api.addServerJoinListener( ev ->{
@@ -56,7 +58,7 @@ public class AminusBot_Main {
                 ch.sendMessage("안알랴줌");
             else if( msg.contains("굴러") )
                 ch.sendMessage("데구르르 데굴데굴데굴");
-            else if ( msg.contains("도움말") ) {
+            else if ( msg.contains("도움말") || msg.contains("명령어") ) {
                 replaced = msg.replace( "-도움말 ", "" );
 
                 if( replaced.equals("기능") ){
@@ -154,6 +156,7 @@ public class AminusBot_Main {
                     embed.setTitle(profile.user_name + " 님의 프로필")
                             .setThumbnail( message.getAuthor().getAvatar() )
                             .addField("💵 가진 재산", profile.money + "원")
+                            .addField("🔨 숙련도", profile.proficiency + "")
                             .addField("🏆 랭킹", "전체 " + profile.rank + "위");
                     ch.sendMessage( userMention, embed );
                 }
@@ -206,10 +209,8 @@ public class AminusBot_Main {
                         + "🥉: " + rank.get(2).user_name + "  " + rank.get(2).money + "원\n");
                 ch.sendMessage( embed );
             }
-            else if( msg.contains("테스트") ) {
-                embed.setImage("https://blog.hubspot.com/hubfs/giphy_1-1.gif");
-                ch.sendMessage( userMention, embed );
-            }
+            else if( msg.contains("건배") )
+                ch.sendMessage( userMention, embed.setImage("https://blog.hubspot.com/hubfs/giphy_1-1.gif") );
             else if( msg.contains("에이") )
                 ch.sendMessage("메모장 좀 그만 쓰면 좋겠는데..");
             else if( msg.contains("링크") ){
@@ -226,7 +227,7 @@ public class AminusBot_Main {
 
         if( command.equals("가방") ){
             embed.setTitle( profile.user_name + "님의 가방")
-                    .setDescription( "묘목 🌱X" + profile.seedlings + "\n목재 🌲X" + profile.woods )
+                    .setDescription( "묘목 🌱X" + profile.seedlings + "\n목재 🧱X" + profile.woods )
                     .addField("팔 수 있는 아이템", "\n나무젓가락X" + profile.chopsticks +
                                                             "\n나무 접시X" + profile.plates +
                                                             "\n나무 열쇠고리X" + profile.keyrings +
@@ -242,7 +243,7 @@ public class AminusBot_Main {
             ch.sendMessage( embed );
         } else if( command.equals("현황") ){
             if( profile.planted_tree == 0 )
-                ch.sendMessage("```🍃 너무나도 썰렁합니다. 현재 나무가 한 그루도 심어져있지 않네요!```");
+                ch.sendMessage("```🍃 너무나도 썰렁합니다. 나무가 단 한 그루도 심어져있지 않네요!```");
             else
                 ch.sendMessage("```🌲 현재 " + profile.planted_tree + "그루의 나무가 심어져 있으며 " + (20-profile.planted_tree) + "만큼의 자리가 남아 있습니다.```");
         } else if( command.contains("심기") ){
@@ -265,14 +266,38 @@ public class AminusBot_Main {
 
             if( profile.planted_tree >= cut && cut > 0 ){
                 profile.woods += cut + bonus;
-                manager.dataEdit(userid, "woods", cut);
+                manager.dataEdit(userid, "woods", cut + bonus);
                 manager.dataEdit(userid, "planted_tree", cut*-1);
                 ch.sendMessage("```✅ " + cut + "그루의 나무를 베었습니다. 숙련도 보너스로 " + bonus + "개가 추가되어 현재 " + profile.woods + "개의 목재를 가지고 있습니다.```");
             }
             else
                 ch.sendMessage("```❗ 벨 수 있는 나무의 수가 부족합니다. \"-나무 현황\" 으로 확인해주세요.```");
         } else if( command.equals("제작") ){
-            ch.sendMessage("```개발중입니다.```");
+            embed.setTitle("제작 가능한 아이템")
+                    .setDescription("🧱: 필요 목재\n🔨: 필요 숙련도")
+                    .addField("1. 나무 젓가락", "🧱X2 🔨X0")
+                    .addField("2. 나무 접시", "🧱X4 🔨X1")
+                    .addField("3. 나무 열쇠고리", "🧱X6 🔨X2")
+                    .addField("4. 나무 조각품", "🧱X8 🔨X4")
+                    .addField("5. 나무 장난감", "🧱X10 🔨X6")
+                    .addField("6. 나무 의자", "🧱X14 🔨X8")
+                    .addField("7. 나무 책상", "🧱X16 🔨X10")
+                    .addField("8. 나무 의자", "🧱X20 🔨X12")
+                    .setFooter("-나무 제작 [번호] 로 아이템을 제작할 수 있습니다.\n현재 보유 목재: " + profile.woods + "🧱 숙련도: " + profile.proficiency + "🔨");
+            ch.sendMessage( embed );
+;       } else if( command.contains("제작") ){
+            int num = Integer.parseInt( command.replace("제작 ", "") );
+            boolean iscanmake = false;
+
+            iscanmake = isCanMake( num, profile, manager );
+
+            if( iscanmake ){
+                manager.dataEdit(userid, "woods", manager.getItems(num).needWoods * -1);
+                manager.dataEdit(userid, manager.getItems(num).item_name, 1);
+
+                ch.sendMessage("```✅ " + manager.getItems(num).item_name + " 1개가 제작되었습니다.```");
+            }else
+                ch.sendMessage("```❗ 필요한 목재나 숙련도가 부족합니다.```");
         } else if( command.equals("팔기") ){
             ch.sendMessage("```제작중입니다.```");
         }
@@ -347,6 +372,14 @@ public class AminusBot_Main {
             embed.setDescription("❔ 나무심기에 관한 커맨드는 \"-도움말 나무심기\" 를 참고해줘.");
             ch.sendMessage( embed );
         }
+    }
+    public static boolean isCanMake( int itemId, Profile profile, DBManager manager ){
+        Items item = manager.getItems(itemId);
+
+        if( item.needWoods <= profile.woods && item.minproficiency <= profile.proficiency )
+            return true;
+
+        return false;
     }
     public static void printLOG( String content ){
         try {

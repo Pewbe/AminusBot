@@ -176,13 +176,13 @@ public class DBManager {
         }
         return profile;
     }
-    public Items getItems( String itemName ){
+    public Items getItems( int itemId ){
         Items items = new Items();
         try {
             Class.forName(JDBC_DRIVER);
             conn = DriverManager.getConnection(DB_URL, USER_NAME, PASSWORD);
             state = conn.createStatement();
-            String sql = "SELECT * FROM items WHERE item_name=" + itemName;
+            String sql = "SELECT * FROM items WHERE item_id=" + itemId;
 
             res = state.executeQuery(sql);
             isfound = res.next();
@@ -196,7 +196,6 @@ public class DBManager {
             items.minproficiency = res.getInt("minproficiency");
             items.needWoods = res.getInt("needWoods");
             items.iscanmake = res.getBoolean("iscanmake");
-            items.iscansell = res.getBoolean("iscansell");
 
             conn.close();
             state.close();

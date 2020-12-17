@@ -17,6 +17,19 @@
                     <target>8</target>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>com.heroku.sdk</groupId>
+                <artifactId>heroku-maven-plugin</artifactId>
+                <version>2.0.11</version>
+                <configuration>
+                    <appName>
+                        aminusbot
+                    </appName>
+                    <processTypes>
+                        <web>java $JAVA_OPTS -cp target/classes:target/dependency/* AminusBot_Main</web>
+                    </processTypes>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
@@ -41,5 +54,4 @@
             <url>https://jcenter.bintray.com</url>
         </repository>
     </repositories>
-
 </project>
