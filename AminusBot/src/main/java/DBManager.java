@@ -280,7 +280,7 @@ public class DBManager {
             res = state.executeQuery( sql );
 
             res.next();
-            printDBLOG( "데이터가 업데이트되었습니다. ID: " + res.getString("user_id") + " NAME: " + res.getString("user_name") + "에 " + attribute + " " + cnt + "만큼 추가" );
+            printDBLOG( "데이터가 업데이트되었습니다. ID: " + res.getString("user_id") + " NAME: " + res.getString("user_name") + "에 " + attribute + " " + cnt );
 
             conn.close();
             state.close();
@@ -302,6 +302,90 @@ public class DBManager {
                 ex1.printStackTrace();
             }
         }
+    }
+    public boolean addValue( String table, String attribute, String add ) {//테이블에 값 추가
+        try {
+            Class.forName(JDBC_DRIVER);
+            conn = DriverManager.getConnection(DB_URL, USER_NAME, PASSWORD);
+            state = conn.createStatement();
+            String sql = "select * from " + table + "where " + attribute + "=" + add;
+
+            res = state.executeQuery(sql);
+            isfound = res.next();
+
+            if (isfound)
+                return false;//이미 존재하는 값으로 추가 실패
+
+            sql = "insert into " + table + " (" + attribute + ") values (\"" + add + "\")";
+            state.executeUpdate(sql);
+            sql = "select * from " + table + "where " + attribute + "=" + add;
+            res = state.executeQuery(sql);
+
+            res.next();
+            printDBLOG( table + " 에 새로운 데이터가 추가되었습니다: " + res.getString(attribute) );
+
+            conn.close();
+            state.close();
+            res.close();
+        } catch(Exception e){
+            e.printStackTrace();
+        } finally { //예외가 있든 없든 무조건 실행. state와 conn이 만약 닫히지 않았을 때 제대로 닫아줌
+            try{
+                if(state!=null)
+                    state.close();
+            }catch(SQLException ex1){
+                ex1.printStackTrace();
+            }
+
+            try{
+                if(conn!=null)
+                    conn.close();
+            }catch(SQLException ex1){
+                ex1.printStackTrace();
+            }
+        }
+        return true;//모두 성공시 반환
+    }
+    public boolean deleteValue( String table, String attribute, String delete ) {//테이블의 값 삭제
+        try {
+            Class.forName(JDBC_DRIVER);
+            conn = DriverManager.getConnection(DB_URL, USER_NAME, PASSWORD);
+            state = conn.createStatement();
+            String sql = "select * from " + table + "where " + attribute + "=" + delete;
+
+            res = state.executeQuery(sql);
+            isfound = res.next();
+
+            if (!isfound)
+                return false;//존재하지 않는 값
+
+            sql = "delete from " + table + " where " + attribute + "=" + delete;
+            state.executeUpdate(sql);
+
+            res.next();
+            printDBLOG( table + " 의 데이터가 삭제되었습니다: " + delete );
+
+            conn.close();
+            state.close();
+            res.close();
+        } catch(Exception e){
+            e.printStackTrace();
+        } finally { //예외가 있든 없든 무조건 실행. state와 conn이 만약 닫히지 않았을 때 제대로 닫아줌
+            try{
+                if(state!=null)
+                    state.close();
+            }catch(SQLException ex1){
+                ex1.printStackTrace();
+            }
+
+            try{
+                if(conn!=null)
+                    conn.close();
+            }catch(SQLException ex1){
+                ex1.printStackTrace();
+            }
+        }
+        return true;//모두 성공시 반환
     }
     public void dataChange( long userid, String attribute, int cnt ){//넘겨준 속성의 데이터값을 넘겨준 값으로 완전히 치환
         try {
